@@ -18,11 +18,15 @@ import dev.triumphteam.gui.guis.BaseGui;
 import dev.triumphteam.gui.guis.Gui;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.entity.Player;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,7 +128,10 @@ public class RewardGui extends GuiFrame {
                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), AxRewards.getPlaceholderParser().setPlaceholders(player, command));
                         }
                         for (Map<?, ?> map : reward.claimItems()) {
-                            ItemStack it = ItemBuilder.create(normalizeItemMap(map)).get();
+                            Map<Object, Object> itemMap = normalizeItemMap(map);
+                            Map<Enchantment, Integer> enchantments = extractEnchantments(itemMap);
+                            ItemStack it = ItemBuilder.create(itemMap).get();
+                            applyEnchantments(it, enchantments);
                             ContainerUtils.INSTANCE.addOrDrop(player.getInventory(), List.of(it), player.getLocation());
                         }
                     });
@@ -207,5 +214,84 @@ public class RewardGui extends GuiFrame {
         }
 
         return copy;
+    }
+
+    private static Map<Enchantment, Integer> extractEnchantments(Map<Object, Object> itemMap) {
+        Map<Enchantment, Integer> enchantments = new HashMap<>();
+        addEnchantmentsFromValue(itemMap.remove("enchants"), enchantments);
+        addEnchantmentsFromValue(itemMap.remove("enchantments"), enchantments);
+        return enchantments;
+    }
+
+    private static void addEnchantmentsFromValue(Object value, Map<Enchantment, Integer> enchantments) {
+        if (value instanceof Map<?, ?> map) {
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                addParsedEnchantment(enchantments, entry.getKey(), entry.getValue());
+            }
+            return;
+        }
+
+        if (value instanceof List<?> list) {
+            for (Object entry : list) {
+                if (entry instanceof String enchantLine) {
+                    String[] split = enchantLine.split(":", 2);
+                    if (split.length == 2) {
+                        addParsedEnchantment(enchantments, split[0], split[1]);
+                    }
+                    continue;
+                }
+
+                if (entry instanceof Map<?, ?> map) {
+                    for (Map.Entry<?, ?> mapEntry : map.entrySet()) {
+                        addParsedEnchantment(enchantments, mapEntry.getKey(), mapEntry.getValue());
+                    }
+                }
+            }
+        }
+    }
+
+    private static void addParsedEnchantment(Map<Enchantment, Integer> enchantments, Object rawKey, Object rawLevel) {
+        Enchantment enchantment = resolveEnchantment(rawKey);
+        if (enchantment == null) {
+            return;
+        }
+
+        int level;
+        try {
+            level = Integer.parseInt(String.valueOf(rawLevel));
+        } catch (NumberFormatException ignored) {
+            return;
+        }
+
+        enchantments.put(enchantment, level);
+    }
+
+    private static Enchantment resolveEnchantment(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        String id = String.valueOf(value).trim().toLowerCase();
+        if (id.isEmpty()) {
+            return null;
+        }
+
+        NamespacedKey key = NamespacedKey.fromString(id);
+        if (key == null && !id.contains(":")) {
+            key = NamespacedKey.minecraft(id);
+        }
+
+        if (key != null) {
+            Enchantment enchantment = Registry.ENCHANTMENT.get(key);
+            if (enchantment != null) {
+                return enchantment;
+            }
+        }
+
+        return Enchantment.getByName(id.toUpperCase());
+    }
+
+    private static void applyEnchantments(ItemStack itemStack, Map<Enchantment, Integer> enchantments) {
+        enchantments.forEach((enchantment, level) -> itemStack.addUnsafeEnchantment(enchantment, level));
     }
 }

@@ -23,11 +23,13 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.artillexstudios.axrewards.AxRewards.CONFIG;
 import static com.artillexstudios.axrewards.AxRewards.LANG;
@@ -122,7 +124,7 @@ public class RewardGui extends GuiFrame {
                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), AxRewards.getPlaceholderParser().setPlaceholders(player, command));
                         }
                         for (Map<?, ?> map : reward.claimItems()) {
-                            ItemStack it = ItemBuilder.create((Map<Object, Object>) map).get();
+                            ItemStack it = ItemBuilder.create(normalizeItemMap(map)).get();
                             ContainerUtils.INSTANCE.addOrDrop(player.getInventory(), List.of(it), player.getLocation());
                         }
                     });
@@ -170,5 +172,40 @@ public class RewardGui extends GuiFrame {
 
     public static Set<RewardGui> getOpenMenus() {
         return openMenus;
+    }
+
+    private static Map<Object, Object> normalizeItemMap(Map<?, ?> original) {
+        final Map<Object, Object> copy = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : original.entrySet()) {
+            Object key = entry.getKey();
+            Object value = entry.getValue();
+
+            if (value instanceof Map<?, ?> nested) {
+                value = normalizeItemMap(nested);
+            } else if (value instanceof List<?> list) {
+                value = list.stream().map(element -> {
+                    if (element instanceof Map<?, ?> map) {
+                        if (map.size() == 1) {
+                            Map.Entry<?, ?> mapEntry = map.entrySet().iterator().next();
+                            return mapEntry.getKey() + ":" + mapEntry.getValue();
+                        }
+
+                        return normalizeItemMap(map);
+                    }
+
+                    return element;
+                }).collect(Collectors.toList());
+            }
+
+            if (("enchants".equals(key) || "enchantments".equals(key)) && value instanceof Map<?, ?> enchants) {
+                value = enchants.entrySet().stream()
+                        .map(e -> e.getKey() + ":" + e.getValue())
+                        .collect(Collectors.toList());
+            }
+
+            copy.put(key, value);
+        }
+
+        return copy;
     }
 }

@@ -123,8 +123,14 @@ public class RewardGui extends GuiFrame {
                     AxRewards.getDatabase().claimReward(player, reward);
 
                     Scheduler.get().run(scheduledTask -> {
+                        String playerName = player.getName();
+                        String strippedPlayerName = stripNamePrefix(playerName);
                         for (String command : reward.claimCommands()) {
-                            command = command.replace("%player%", player.getName());
+                            command = command
+                                    .replace("%player%", playerName == null ? "" : playerName)
+                                    .replace("%player_with_prefix%", playerName == null ? "" : playerName)
+                                    .replace("%player_without_prefix%", strippedPlayerName)
+                                    .replace("%player_uuid%", player.getUniqueId().toString());
                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), AxRewards.getPlaceholderParser().setPlaceholders(player, command));
                         }
                         for (Map<?, ?> map : reward.claimItems()) {
@@ -179,6 +185,13 @@ public class RewardGui extends GuiFrame {
 
     public static Set<RewardGui> getOpenMenus() {
         return openMenus;
+    }
+
+    private static String stripNamePrefix(String playerName) {
+        if (playerName == null) return "";
+        if (!playerName.startsWith(".")) return playerName;
+        if (playerName.length() == 1) return playerName;
+        return playerName.substring(1);
     }
 
     private static Map<Object, Object> normalizeItemMap(Map<?, ?> original) {

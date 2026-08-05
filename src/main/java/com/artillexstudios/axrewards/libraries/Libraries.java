@@ -1,7 +1,7 @@
 package com.artillexstudios.axrewards.libraries;
 
-import revxrsal.zapper.Dependency;
-import revxrsal.zapper.relocation.Relocation;
+import com.artillexstudios.axapi.libraries.Library;
+import com.artillexstudios.axapi.libraries.Relocation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,9 +21,9 @@ public enum Libraries {
     COMMONS_DBUTILS("commons-dbutils:commons-dbutils:1.8.1");
 
     private final List<Relocation> relocations = new ArrayList<>();
-    private final Dependency library;
+    private final Library library;
 
-    public Dependency fetchLibrary() {
+    public Library fetchLibrary() {
         return this.library;
     }
 
@@ -38,13 +38,13 @@ public enum Libraries {
     Libraries(String lib, Relocation relocation) {
         String[] split = lib.replace("{}", ".").split(":");
 
-        this.library = new Dependency(split[0], split[1], split[2]);
+        this.library = new Library(split[0], split[1], split[2], null, List.of());
         this.relocations.add(relocation);
     }
 
     Libraries(String lib) {
         String[] split = lib.replace("{}", ".").split(":");
 
-        this.library = new Dependency(split[0], split[1], split[2]);
+        this.library = new Library(split[0], split[1], split[2], null, List.of());
     }
 }

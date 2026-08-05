@@ -4,6 +4,7 @@ import com.artillexstudios.axapi.AxPlugin;
 import com.artillexstudios.axapi.config.Config;
 import com.artillexstudios.axapi.dependencies.DependencyManagerWrapper;
 import com.artillexstudios.axapi.executor.ThreadedQueue;
+import com.artillexstudios.axapi.libraries.Relocation;
 import com.artillexstudios.axapi.libs.boostedyaml.dvs.versioning.BasicVersioning;
 import com.artillexstudios.axapi.libs.boostedyaml.settings.dumper.DumperSettings;
 import com.artillexstudios.axapi.libs.boostedyaml.settings.general.GeneralSettings;
@@ -28,8 +29,6 @@ import com.artillexstudios.axrewards.utils.FileUtils;
 import com.artillexstudios.axrewards.utils.UpdateNotifier;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
-import revxrsal.zapper.DependencyManager;
-import revxrsal.zapper.relocation.Relocation;
 
 import java.io.File;
 
@@ -67,11 +66,10 @@ public final class AxRewards extends AxPlugin {
         manager.repository("https://repo.papermc.io/repository/maven-public/");
         manager.repository("https://repo.artillex-studios.com/releases/");
 
-        DependencyManager dependencyManager = manager.wrapped();
         for (Libraries lib : Libraries.values()) {
-            dependencyManager.dependency(lib.fetchLibrary());
+            manager.dependency(lib.fetchLibrary());
             for (Relocation relocation : lib.relocations()) {
-                dependencyManager.relocate(relocation);
+                manager.relocate(relocation);
             }
         }
     }

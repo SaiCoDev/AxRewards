@@ -84,8 +84,8 @@
 
     <repositories>
         <repository>
-            <id>Artillex-Studios</id>
-            <url>https://repo.artillex-studios.com/releases/</url>
+            <id>Enchanted</id>
+            <url>https://maven.enchanted.dev/repository/maven-releases</url>
         </repository>
         <repository>
             <id>spigotmc-repo</id>
@@ -186,4 +186,10 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+    <distributionManagement>
+        <repository>
+            <id>Enchanted</id>
+            <url>https://maven.enchanted.dev/repository/maven-releases</url>
+        </repository>
+    </distributionManagement>
 </project>
